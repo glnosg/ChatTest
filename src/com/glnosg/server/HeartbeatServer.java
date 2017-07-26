@@ -17,7 +17,10 @@ public class HeartbeatServer {
 
     public void setUp() {
         try {
-            ServerSocket serverSocket = new ServerSocket(40123);
+            ServerSocket serverSocket = new ServerSocket(40123, 50);
+
+            Thread heartbeat = new Thread (new Heartbeat());
+            heartbeat.start();
 
             while(true) {
                 Socket clientSocket = serverSocket.accept();
@@ -28,9 +31,9 @@ public class HeartbeatServer {
                 Thread clientHandler = new Thread(new ClientHandler(connectedClient));
                 clientHandler.start();
             }
-        } catch (IOException ioe) {
-            System.out.println("IO error when opening a socket");
-            ioe.printStackTrace();
+        } catch (IOException ioException) {
+            System.out.println("Server ended the connection!");
+            ioException.printStackTrace();
         }
     }
 
@@ -55,12 +58,68 @@ public class HeartbeatServer {
             String message;
 
             try {
-                while ((message = in.readLine()) != null) {
+                message = in.readLine();
+                while ((message != null) && !message.equals("h|b")) {
                     System.out.println("Message received: " + message);
                     sendToAll(message);
                 }
             } catch (IOException ioe) {
                 ioe.printStackTrace();
+            }
+        }
+    }
+
+    public class Heartbeat implements Runnable {
+
+        private BufferedReader in;
+        private PrintWriter out;
+
+        public void run() {
+            System.out.println("HB thread on");
+            while (true) {
+                oneBeat();
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException ie) {
+                    ie.printStackTrace();
+                }
+            }
+        }
+
+        private void oneBeat () {
+            sendHb();
+            checkHb();
+        }
+
+        private void sendHb() {
+            for (ConnectedClient currentClient : connectedClientsList) {
+                out = currentClient.getOutputStream();
+                out.println("h|b");
+                System.out.println("msg sent");
+            }
+        }
+
+        private void checkHb(){
+
+            String hbMsg = null;
+
+            for (int i = 0; i < connectedClientsList.size(); i++) {
+
+                in = connectedClientsList.get(i).getInputStream();
+
+                try {
+                    hbMsg = in.readLine();
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                }
+
+                if (hbMsg != null) {
+                    System.out.println("Client " + i + " received hb message: " + hbMsg);
+                } else {
+                    connectedClientsList.get(i).closeClientSocket();
+                    connectedClientsList.remove(i);
+                    System.out.println("Client " + i + " has been disconnected");
+                }
             }
         }
     }

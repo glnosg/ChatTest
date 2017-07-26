@@ -4,10 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 
 public class HeartbeatClient {
@@ -17,6 +14,7 @@ public class HeartbeatClient {
     private JButton sendButton;
 
     private PrintWriter out;
+    private PrintWriter hbOut;
 
     public static void main(String[] args) {
         new HeartbeatClient().go();
@@ -57,8 +55,9 @@ public class HeartbeatClient {
             Socket clientSocket = new Socket("127.0.0.1", 40123);
 
             out = new PrintWriter(clientSocket.getOutputStream(), true);
+            hbOut = new PrintWriter(clientSocket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            System.out.println("Connection with server established");
+            System.out.println("Connection with server established: " + clientSocket.getInetAddress().getHostName() );
 
             Thread serverListener = new Thread(new ServerListener(in));
             serverListener.start();
@@ -92,7 +91,11 @@ public class HeartbeatClient {
             String message;
             try {
                 while ((message = in.readLine()) != null) {
-                    incoming.append(message + "\n");
+                    if (message.equals("h|b")) {
+                        out.println(message);
+                    } else {
+                        incoming.append(message + "\n");
+                    }
                 }
             } catch (IOException ioe) {
                 ioe.printStackTrace();

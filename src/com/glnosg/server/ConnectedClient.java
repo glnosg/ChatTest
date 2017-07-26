@@ -14,6 +14,9 @@ public class ConnectedClient {
     private BufferedReader inputStream;
     private PrintWriter outputStream;
 
+    private BufferedReader hbIn;
+    private PrintWriter hbOut;
+
     public ConnectedClient (Socket s) {
         clientSocket = s;
         setInputStream();
@@ -23,6 +26,7 @@ public class ConnectedClient {
     private void setInputStream() {
         try {
             inputStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            hbIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
@@ -31,6 +35,7 @@ public class ConnectedClient {
     private void setOutputStream() {
         try {
             outputStream = new PrintWriter(clientSocket.getOutputStream(), true);
+            hbOut = new PrintWriter(clientSocket.getOutputStream(), true);
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
@@ -42,5 +47,21 @@ public class ConnectedClient {
 
     public PrintWriter getOutputStream() {
         return outputStream;
+    }
+
+    public BufferedReader getHbIn () {
+        return hbIn;
+    }
+
+    public PrintWriter getHbOut() {
+        return hbOut;
+    }
+
+    public void closeClientSocket() {
+        try {
+            clientSocket.close();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
     }
 }
